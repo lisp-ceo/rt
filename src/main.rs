@@ -61,6 +61,27 @@ fn magnitude(t: Tuple) -> f64 {
     sum.sqrt()
 }
 
+fn normalize(t: Tuple) -> Tuple {
+    let magt = magnitude(t);
+    Tuple{
+        x: t.x / magt,
+        y: t.y / magt,
+        z: t.z / magt,
+        w: t.w / magt
+    }
+}
+
+fn dot(a: Tuple, b: Tuple) -> f64 {
+    a.x * b.x +
+        a.y * b.y +
+        a.z * b.z +
+        a.w * b.w
+}
+
+fn cross(a: Tuple, b: Tuple) -> Tuple {
+    Tuple::vector(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x)
+}
+
 impl Add for Tuple {
     type Output = Self;
     fn add(self, other: Tuple) -> Tuple {
@@ -268,5 +289,34 @@ mod tests {
     fn test_magnitude5() {
         let v = Tuple::vector(-1.0,-2.0,-3.0);
         assert_eq!(magnitude(v), 14.0_f64.sqrt())
+    }
+    #[test]
+    fn test_normalizing1() {
+        let v = Tuple::vector(4.0,0.0,0.0);
+        assert_eq!(normalize(v), Tuple::vector(1.0,0.0,0.0))
+    }
+    #[test]
+    fn test_normalizing2() {
+        let v = Tuple::vector(1.0,2.0,3.0);
+        assert!(Tuple::eq(normalize(v), Tuple::vector(0.26726,0.53452,0.80178)))
+    }
+    #[test]
+    fn test_normalizing3() {
+        let v = Tuple::vector(1.0,2.0,3.0);
+        let norm = normalize(v);
+        assert_eq!(magnitude(norm), 1.0)
+    }
+    #[test]
+    fn test_dot_product() {
+        let a = Tuple::vector(1.0,2.0,3.0);
+        let b = Tuple::vector(2.0,3.0,4.0);
+        assert_eq!(dot(a,b), 20.0)
+    }
+    #[test]
+    fn test_cross_product() {
+        let a = Tuple::vector(1.0,2.0,3.0);
+        let b = Tuple::vector(2.0,3.0,4.0);
+        assert_eq!(cross(a,b), Tuple::vector(-1.0,2.0,-1.0));
+        assert_eq!(cross(b,a), Tuple::vector(1.0,-2.0,1.0));
     }
 }
