@@ -4,16 +4,12 @@ use std::ops::Neg;
 use std::ops::Mul;
 use std::ops::Div;
 
-fn main() {
-    println!("Hello, world!");
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
-struct Tuple {
-    x: f64,
-    y: f64,
-    z: f64,
-    w: f64,
+pub struct Tuple {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+    pub w: f64,
 }
 const ERR: f64 = 0.0001;
 const EPSILON: Tuple = Tuple {
@@ -22,19 +18,20 @@ const EPSILON: Tuple = Tuple {
     z: ERR,
     w: ERR,
 };
-const ZERO: Tuple = Tuple {
-    x: 0.0,
-    y: 0.0,
-    z: 0.0,
-    w: 0.0,
-};
+
 
 impl Tuple {
-    fn point(x: f64, y: f64, z: f64) -> Tuple {
+    pub const ZERO: Tuple = Tuple {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+        w: 0.0,
+    };
+    pub fn point(x: f64, y: f64, z: f64) -> Tuple {
         let w: f64 = 1.0;
         Tuple::new(x, y, z, w)
     }
-    fn vector(x: f64, y: f64, z: f64) -> Tuple {
+    pub fn vector(x: f64, y: f64, z: f64) -> Tuple {
         let w: f64 = 0.0;
         Tuple::new(x, y, z, w)
     }
@@ -61,7 +58,7 @@ fn magnitude(t: Tuple) -> f64 {
     sum.sqrt()
 }
 
-fn normalize(t: Tuple) -> Tuple {
+pub fn normalize(t: Tuple) -> Tuple {
     let magt = magnitude(t);
     Tuple{
         x: t.x / magt,
