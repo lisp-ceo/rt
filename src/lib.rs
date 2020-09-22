@@ -147,7 +147,6 @@ pub struct Color {
     pub blue: f64,
 }
 
-
 impl Add for Color {
     type Output = Self;
     fn add(self, other: Color) -> Color {
@@ -155,6 +154,28 @@ impl Add for Color {
             red: self.red + other.red,
             green: self.green + other.green,
             blue: self.blue + other.blue
+        }
+    }
+}
+
+impl Mul<f64> for Color {
+    type Output = Self;
+    fn mul(self, rhs: f64) -> Self::Output {
+        Color {
+            red: self.red * rhs,
+            green: self.green * rhs,
+            blue: self.blue * rhs,
+        }
+    }
+}
+
+impl Mul<Color> for Color {
+    type Output = Self;
+    fn mul(self, rhs: Color) -> Self::Output {
+        Color {
+            red: self.red * rhs.red,
+            green: self.green * rhs.green,
+            blue: self.blue * rhs.blue,
         }
     }
 }
@@ -355,5 +376,16 @@ mod tests {
         let c1 = color(0.9, 0.6, 0.75);
         let c2 = color(0.7, 0.1, 0.25);
         assert_eq!(c1 + c2, color(1.6,0.7,1.0))
+    }
+    #[test]
+    fn test_mult_scalar() {
+        let c = color(0.2, 0.3, 0.4);
+        assert_eq!(c * 2, color(0.4,0.6,0.8))
+    }
+    #[test]
+    fn test_mult_colors() {
+        let c1 = color(1.0, 0.2, 0.4);
+        let c2 = color(0.9, 1.0, 0.1);
+        assert_eq!(c1 * c2, color(0.9,0.2,0.04))
     }
 }
