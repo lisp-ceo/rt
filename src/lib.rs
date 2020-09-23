@@ -11,7 +11,7 @@ pub struct Tuple {
     pub z: f64,
     pub w: f64,
 }
-const ERR: f64 = 0.0001;
+const ERR: f64 = 0.0000000000000001;
 const EPSILON: Tuple = Tuple {
     x: ERR,
     y: ERR,
@@ -140,11 +140,29 @@ impl Sub for Tuple {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Copy, Clone, PartialOrd)]
 pub struct Color {
     pub red: f64,
     pub green: f64,
     pub blue: f64,
+}
+
+impl PartialEq for Color {
+    fn eq(&self, other: &Self) -> bool {
+        let rd = self.red - other.red;
+        if rd > ERR {
+            return false;
+        }
+        let gd = self.green - other.green;
+        if gd > ERR {
+            return false;
+        }
+        let bd = self.blue - other.blue;
+        if bd > ERR {
+            return false;
+        }
+        true
+    }
 }
 
 impl Add for Color {
@@ -181,11 +199,50 @@ impl Mul<Color> for Color {
 }
 
 pub fn color(red: f64, green: f64, blue: f64) -> Color {
-    return Color{
+    Color{
         red,
         green,
         blue,
-    };
+    }
+}
+
+pub struct Canvas {
+    pub pixels: Vec<Vec<Color>>,
+    pub width: i64,
+    pub height: i64
+}
+
+pub fn canvas(width: i64, height: i64) -> Canvas {
+    let mut pixels = Vec::new();
+    for _ in 0..width {
+        pixels.push(Vec::with_capacity(height as usize));
+    }
+    Canvas{
+        pixels,
+        width,
+        height,
+    }
+}
+
+pub fn write_pixel(canvas: &mut Canvas, x: i64, y: i64, color: Color) {
+    canvas.pixels[x as usize][y as usize] = color
+}
+
+pub fn pixel_at(canvas: &mut Canvas, x: i64, y: i64) -> Color {
+    canvas.pixels[x as usize][y as usize]
+}
+
+impl PartialEq for Canvas {
+    fn eq(&self, other: &Self) -> bool {
+        for x in 0..self.pixels.len() {
+            for y in 0..self.pixels[x].len() {
+                if self.pixels[x][y] != other.pixels[x][y] {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 #[cfg(test)]
@@ -380,12 +437,31 @@ mod tests {
     #[test]
     fn test_mult_scalar() {
         let c = color(0.2, 0.3, 0.4);
-        assert_eq!(c * 2, color(0.4,0.6,0.8))
+        assert_eq!(c * 2.0, color(0.4,0.6,0.8))
     }
     #[test]
     fn test_mult_colors() {
         let c1 = color(1.0, 0.2, 0.4);
         let c2 = color(0.9, 1.0, 0.1);
         assert_eq!(c1 * c2, color(0.9,0.2,0.04))
+    }
+    #[test]
+    fn test_canvas() {
+        let c = canvas(10,20);
+        assert_eq!(c.width, 10);
+        assert_eq!(c.height, 20);
+        for x in 0..c.pixels.len() {
+            for y in 0..c.pixels[x].len() {
+                assert_eq!(c.pixels[x as usize][y as usize], color(0.0, 0.0, 0.0));
+            }
+
+        }
+    }
+    #[test]
+    fn test_writing_pixels() {
+        let mut c = canvas(10, 20);
+        let red = color(1.0, 0.0, 0.0);
+        write_pixel(&mut c, 2, 3, red);
+        assert_eq!(pixel_at(&mut c, 2, 3), red);
     }
 }
