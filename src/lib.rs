@@ -11,14 +11,15 @@ pub struct Tuple {
     pub z: f64,
     pub w: f64,
 }
-const ERR: f64 = 0.0000000000000001;
+
+// const ERR: f64 = 0.0000000000000001; // XXX too much specificity causes equality problems with Color
+const ERR: f64 = 0.001;
 const EPSILON: Tuple = Tuple {
     x: ERR,
     y: ERR,
     z: ERR,
     w: ERR,
 };
-
 
 impl Tuple {
     pub const ZERO: Tuple = Tuple {
@@ -213,9 +214,13 @@ pub struct Canvas {
 }
 
 pub fn canvas(width: i64, height: i64) -> Canvas {
-    let mut pixels = Vec::new();
-    for _ in 0..width {
-        pixels.push(Vec::with_capacity(height as usize));
+    let mut pixels: Vec<Vec<Color>> = Vec::new();
+    for x in 0..width {
+        let mut row: Vec<Color> = Vec::new();
+        for _ in 0..height {
+            row.push(color(0.0, 0.0, 0.0));
+        }
+        pixels.push(row)
     }
     Canvas{
         pixels,
@@ -236,7 +241,7 @@ impl PartialEq for Canvas {
     fn eq(&self, other: &Self) -> bool {
         for x in 0..self.pixels.len() {
             for y in 0..self.pixels[x].len() {
-                if self.pixels[x][y] != other.pixels[x][y] {
+                if self.pixels[x as usize][y as usize] != other.pixels[x as usize][y as usize] {
                     return false;
                 }
             }
