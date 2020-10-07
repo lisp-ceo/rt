@@ -1,3 +1,5 @@
+#![feature(clamp)]
+
 use std::ops::Sub;
 use std::ops::Add;
 use std::ops::Neg;
@@ -12,7 +14,6 @@ pub struct Tuple {
     pub w: f64,
 }
 
-// const ERR: f64 = 0.0000000000000001; // XXX too much specificity causes equality problems with Color
 const ERR: f64 = 0.001;
 const EPSILON: Tuple = Tuple {
     x: ERR,
@@ -250,6 +251,28 @@ impl PartialEq for Canvas {
     }
 }
 
+pub fn canvas_to_ppm(c: Canvas) -> String {
+    let mut ppm = String::new();
+    let version = "P3";
+    let max_color = "255";
+    ppm.push_str(version);
+    ppm.push('\n');
+    ppm.push_str(&format!("{} {}", c.width, c.height));
+    ppm.push('\n');
+    ppm.push_str(max_color);
+    ppm.push('\n');
+    for x in c.pixels.iter() {
+        for pixel in x.iter() {
+            ppm.push_str(&format!("{} {} {} ",
+                                  (pixel.red * 255.0).clamp(0.0,255.0).round() as i64,
+                                  (pixel.green * 255.0).clamp(0.0,255.0).round() as i64,
+                                  (pixel.blue * 255.0).clamp(0.0,255.0).round() as i64));
+        }
+    }
+    ppm.push('\n');
+    ppm
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -468,5 +491,41 @@ mod tests {
         let red = color(1.0, 0.0, 0.0);
         write_pixel(&mut c, 2, 3, red);
         assert_eq!(pixel_at(&mut c, 2, 3), red);
+    }
+
+    #[test]
+    fn test_costructing_the_ppm_header() {
+        let c = canvas(5, 3);
+        let ppm = canvas_to_ppm(c);
+        let want = r#"P3
+5 3
+255
+"#;
+
+        let mut first_four = String::new();
+        for line in ppm.lines().take(3) {
+            first_four.push_str(line);
+            first_four.push('\n');
+        }
+
+        assert_eq!(first_four, want)
+    }
+
+    #[test]
+    fn test_ppm_pixel_data() {
+        let mut c = canvas(5, 3);
+        let c1 = color(1.5, 0.0, 0.0);
+        let c2 = color(0.0, 0.5, 0.0);
+        let c3 = color(-0.5, 0.0, 1.0);
+        write_pixel(&mut c, 0, 0, c1);
+        write_pixel(&mut c, 2, 1, c2);
+        write_pixel(&mut c, 4, 2, c3);
+        let ppm = canvas_to_ppm(c);
+        let mut four_to_six = String::new();
+        let want = r#"255 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 128 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 "#;
+        for line in ppm.lines().skip(3).take(1) {
+            four_to_six.push_str(line);
+        }
+        assert_eq!(four_to_six, want)
     }
 }
