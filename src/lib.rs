@@ -216,12 +216,13 @@ pub struct Canvas {
 
 pub fn canvas(width: i64, height: i64) -> Canvas {
     let mut pixels: Vec<Vec<Color>> = Vec::new();
-    for x in 0..width {
-        let mut row: Vec<Color> = Vec::new();
+    // colunn-major order
+    for _ in 0..width {
+        let mut col: Vec<Color> = Vec::new();
         for _ in 0..height {
-            row.push(color(0.0, 0.0, 0.0));
+            col.push(color(0.0, 0.0, 0.0));
         }
-        pixels.push(row)
+        pixels.push(col)
     }
     Canvas{
         pixels,
@@ -261,16 +262,44 @@ pub fn canvas_to_ppm(c: Canvas) -> String {
     ppm.push('\n');
     ppm.push_str(max_color);
     ppm.push('\n');
-    for x in c.pixels.iter() {
-        for pixel in x.iter() {
-            ppm.push_str(&format!("{} {} {} ",
-                                  (pixel.red * 255.0).clamp(0.0,255.0).round() as i64,
-                                  (pixel.green * 255.0).clamp(0.0,255.0).round() as i64,
-                                  (pixel.blue * 255.0).clamp(0.0,255.0).round() as i64));
+
+    let mut tmp = String::new();
+    let mut leading = true;
+    // row-major traversal of
+    // column-major matrix
+    for x in 0..c.height {
+        let mut row: Vec<Color> = Vec::new();
+        for col in c.pixels.iter() {
+            row.push(col[x as usize]);
         }
+        for pixel in row.iter() {
+            let components = [pixel.red, pixel.green, pixel.blue];
+            for b in components.iter() {
+                let clamped = byte_clamp(*b);
+                let mut formatted = format!(" {}", clamped);
+                if leading {
+                    formatted = format!("{}", clamped);
+                    leading = false;
+                }
+                if tmp.len() + formatted.len() > 70 {
+                    tmp.push('\n');
+                    ppm.push_str(tmp.as_str());
+                    tmp = String::new();
+                    formatted = format!("{}", clamped);
+                }
+                tmp.push_str(formatted.as_str());
+            }
+        }
+        tmp.push('\n');
+        leading = true;
+        ppm.push_str(tmp.as_str());
+        tmp = String::new();
     }
-    ppm.push('\n');
     ppm
+}
+
+pub fn byte_clamp(x: f64) -> i64 {
+    (x * 255.0).clamp(0.0, 255.0).round() as i64
 }
 
 #[cfg(test)]
@@ -501,7 +530,6 @@ mod tests {
 5 3
 255
 "#;
-
         let mut first_four = String::new();
         for line in ppm.lines().take(3) {
             first_four.push_str(line);
@@ -522,10 +550,37 @@ mod tests {
         write_pixel(&mut c, 4, 2, c3);
         let ppm = canvas_to_ppm(c);
         let mut four_to_six = String::new();
-        let want = r#"255 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 128 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 "#;
-        for line in ppm.lines().skip(3).take(1) {
+        let want = r#"255 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 128 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 255
+"#;
+        for line in ppm.lines().skip(3).take(4) {
             four_to_six.push_str(line);
+            four_to_six.push('\n');
         }
         assert_eq!(four_to_six, want)
     }
+
+     #[test]
+     fn test_splitting_long_lines_in_ppm() {
+         let mut c = canvas(10, 2);
+         let col = color(1.0, 0.8, 0.6);
+         for x in 0..c.pixels.len() {
+             for y in 0..c.pixels[x].len() {
+                 write_pixel(&mut c, x as i64, y as i64, col);
+             }
+         }
+         let want = r#"255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204
+153 255 204 153 255 204 153 255 204 153 255 204 153
+255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204
+153 255 204 153 255 204 153 255 204 153 255 204 153
+"#;
+         let ppm = canvas_to_ppm(c);
+         let mut four_to_seven = String::new();
+         for line in ppm.lines().skip(3).take(4) {
+             four_to_seven.push_str(line);
+             four_to_seven.push('\n');
+         }
+         assert_eq!(four_to_seven, want)
+     }
 }
