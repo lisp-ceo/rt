@@ -1,5 +1,9 @@
 #![feature(clamp)]
 
+#[macro_use]
+extern crate nalgebra as na;
+use na::{DMatrix};
+
 use std::ops::Sub;
 use std::ops::Add;
 use std::ops::Neg;
@@ -583,4 +587,32 @@ mod tests {
          }
          assert_eq!(four_to_seven, want)
      }
+
+    #[test]
+    fn test_constructing_matrix() {
+        let m = DMatrix::from_row_slice(4,4, &[1.0, 2.0, 3.0, 4.0, 5.5, 6.5, 7.5, 8.5, 9.0, 10.0, 11.0, 12.0, 13.5, 14.5, 15.5, 16.5]);
+        assert_eq!(m[(0,0)], 1.0);
+        assert_eq!(m[(0,3)], 4.0);
+        assert_eq!(m[(1,0)], 5.5);
+        assert_eq!(m[(1,2)], 7.5);
+        assert_eq!(m[(2,2)], 11.0);
+        assert_eq!(m[(3,0)], 13.5);
+        assert_eq!(m[(3,2)], 15.5);
+    }
+
+    #[test]
+    fn test_constructing_2dmatrix() {
+        let m = DMatrix::from_row_slice(2,2, &[-3,5,1,-2]);
+        assert_eq!(m[(0,0)], -3);
+        assert_eq!(m[(0,1)], 5);
+        assert_eq!(m[(1,0)], 1);
+        assert_eq!(m[(1,1)], -2);
+    }
+
+    #[test]
+    fn test_multiplying_matrices() {
+        let a = DMatrix::from_row_slice(4,4,&[1,2,3,4,5,6,7,8,9,8,7,6,5,4,3,2]);
+        let b = DMatrix::from_row_slice(4,4,&[-2,1,2,3,3,2,1,-1,4,3,6,5,1,2,7,8]);
+        assert_eq!(a * b, DMatrix::from_row_slice(4,4,&[20,22,50,48,44,54,114,108,40,58,110,102,16,26,46,42]));
+    }
 }
