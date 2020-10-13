@@ -615,4 +615,11 @@ mod tests {
         let b = DMatrix::from_row_slice(4,4,&[-2,1,2,3,3,2,1,-1,4,3,6,5,1,2,7,8]);
         assert_eq!(a * b, DMatrix::from_row_slice(4,4,&[20,22,50,48,44,54,114,108,40,58,110,102,16,26,46,42]));
     }
+
+    #[test]
+    fn test_multiplication_by_tuple() {
+        let a = DMatrix::from_row_slice(4,4,&[1,2,3,4,2,4,4,2,8,6,4,1,0,0,0,1]);
+        let b = DMatrix::from_row_slice(4,1,&[1,2,3,1]);
+        assert_eq!(a * b, DMatrix::from_row_slice(4,1,&[18,24,33,1]));
+    }
 }
