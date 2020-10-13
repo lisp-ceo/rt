@@ -622,4 +622,11 @@ mod tests {
         let b = DMatrix::from_row_slice(4,1,&[1,2,3,1]);
         assert_eq!(a * b, DMatrix::from_row_slice(4,1,&[18,24,33,1]));
     }
+
+    #[test]
+    fn test_multiplicative_identity() {
+        let a = DMatrix::from_row_slice(4,4,&[0, 1, 2, 4, 1, 2, 4, 8, 2, 4, 8, 16,4, 8, 16, 32]);
+        let id = DMatrix::identity(4,4);
+        assert_eq!(a.clone() * id, a);
+    }
 }
