@@ -1,8 +1,8 @@
 #![feature(clamp)]
+#![allow(dead_code)]
 
 #[macro_use]
 extern crate nalgebra as na;
-use na::{DMatrix, Matrix, Dynamic, VecStorage};
 
 use std::ops::Sub;
 use std::ops::Add;
@@ -19,12 +19,6 @@ pub struct Tuple {
 }
 
 const ERR: f64 = 0.001;
-const EPSILON: Tuple = Tuple {
-    x: ERR,
-    y: ERR,
-    z: ERR,
-    w: ERR,
-};
 
 impl Tuple {
     pub const ZERO: Tuple = Tuple {
@@ -51,8 +45,14 @@ impl Tuple {
     fn is_vector(&self) -> bool {
         self.w == 0.0
     }
+    const EPSILON: Tuple = Tuple {
+        x: ERR,
+        y: ERR,
+        z: ERR,
+        w: ERR,
+    };
     fn eq(self, other: Self) -> bool {
-        (self - other) < EPSILON
+        (self - other) < Tuple::EPSILON
     }
 }
 
@@ -309,6 +309,7 @@ pub fn byte_clamp(x: f64) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use na::{DMatrix, Matrix, Dynamic, VecStorage};
 
     // initial tests
     #[test]
@@ -639,7 +640,7 @@ mod tests {
 
     #[test]
     fn test_id_transpose() {
-        let id:Matrix<i64, Dynamic, Dynamic, VecStorage<i64, Dynamic, Dynamic>> = DMatrix::identity(4,4);
+        let id: Matrix<i64, Dynamic, Dynamic, VecStorage<i64, Dynamic, Dynamic>> = DMatrix::identity(4,4);
         assert_eq!(id.clone(), id.transpose());
     }
 }
