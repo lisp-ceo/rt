@@ -10,6 +10,7 @@ edition = "2018"
 
 nalgebra = "0.18"
 alga = "0.9.3"
+approx = "0.3.2"
 
 [lib]
 name = "core"

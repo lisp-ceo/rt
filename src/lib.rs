@@ -1,10 +1,12 @@
 #![feature(clamp)]
 #![allow(dead_code)]
 
-#[macro_use]
 extern crate nalgebra as na;
-use alga::general::{ComplexField, RingCommutative};
-use na::{DMatrix, Dynamic, Matrix, Scalar};
+use alga::general::ComplexField;
+use na::{DMatrix, Scalar};
+
+#[macro_use]
+extern crate approx;
 
 use std::ops::Add;
 use std::ops::Div;
@@ -327,7 +329,7 @@ pub fn cofactor<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize
 #[cfg(test)]
 mod tests {
     use super::*;
-    use na::VecStorage;
+    use na::{Dynamic, Matrix, VecStorage};
 
     // initial tests
     #[test]
@@ -727,5 +729,31 @@ mod tests {
         assert_eq!(cofactor(&a, 0, 0), -12.0);
         assert_eq!(minor(&a, 1, 0), 25.0);
         assert_eq!(cofactor(&a, 1, 0), -25.0);
+    }
+
+    #[test]
+    fn test_cofactor_m3() {
+        let a = DMatrix::from_row_slice(3, 3, &[1.0, 2.0, 6.0, -5.0, 8.0, -4.0, 2.0, 6.0, 4.0]);
+        assert_eq!(cofactor(&a, 0, 0), 56.0);
+        assert_eq!(cofactor(&a, 0, 1), 12.0);
+        assert_eq!(cofactor(&a, 0, 2), -46.0);
+        assert_eq!(a.determinant(), -196.0);
+    }
+
+    #[test]
+    fn test_cofactor_m4() {
+        let a = DMatrix::from_row_slice(
+            4,
+            4,
+            &[
+                -2.0, -8.0, 3.0, 5.0, -3.0, 1.0, 7.0, 3.0, 1.0, 2.0, -9.0, 6.0, -6.0, 7.0, 7.0,
+                -9.0,
+            ],
+        );
+        assert_eq!(cofactor(&a, 0, 0), 690.0);
+        assert_eq!(cofactor(&a, 0, 1), 447.0);
+        assert_eq!(cofactor(&a, 0, 2), 210.0);
+        assert_eq!(cofactor(&a, 0, 3), 51.0);
+        assert_relative_eq!(a.determinant(), -4071.0);
     }
 }
