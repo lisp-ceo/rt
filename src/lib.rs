@@ -756,4 +756,48 @@ mod tests {
         assert_eq!(cofactor(&a, 0, 3), 51.0);
         assert_relative_eq!(a.determinant(), -4071.0);
     }
+
+    #[test]
+    fn test_invertible() {
+        let a = DMatrix::from_row_slice(
+            4,
+            4,
+            &[
+                6.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 6.0, 4.0, -9.0, 3.0, -7.0, 9.0, 1.0, 7.0, -6.0,
+            ],
+        );
+
+        assert_eq!(a.determinant(), -2120.0);
+        assert_eq!(a.is_invertible(), true);
+    }
+
+    fn test_not_invertible() {
+        let a = DMatrix::from_row_slice(
+            4,
+            4,
+            &[
+                -4.0, 2.0, -2.0, -3.0, 9.0, 6.0, 2.0, 6.0, 0.0, -5.0, 1.0, -5.0, 0.0, 0.0, 0.0, 0.0,
+            ],
+        );
+
+        assert_eq!(a.determinant(), 0.0);
+        assert_eq!(a.is_invertible(), false);
+    }
+
+    fn test_not_inverse() {
+        let a = DMatrix::from_row_slice(
+            4,
+            4,
+            &[
+                -5.0, 2.0, 6.0, -8.0, 1.0, -5.0, 1.0, 8.0, 7.0, 7.0, -6.0, -7.0, 1.0, -3.0, 7.0,
+                4.0,
+            ],
+        );
+        let b = a.clone().try_inverse().unwrap();
+        assert_eq!(a.determinant(), 532.0);
+        assert_eq!(cofactor(&a, 2, 3), -160.0);
+        assert_eq!(b[(3, 2)], 105.0);
+        assert_eq!(cofactor(&a, 3, 2), 105.0);
+        assert_eq!(b[(2, 3)], 105.0 / 532.0);
+    }
 }
