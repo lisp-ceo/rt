@@ -305,6 +305,7 @@ pub fn byte_clamp(x: f64) -> i64 {
     (x * 255.0).clamp(0.0, 255.0).round() as i64
 }
 
+// TODO: replace <V> with named trait that includes Scalar + ComplexField
 pub fn submatrix<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize) -> DMatrix<V> {
     m.clone().remove_rows(row, 1).remove_columns(col, 1)
 }
@@ -312,6 +313,15 @@ pub fn submatrix<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usiz
 pub fn minor<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize) -> V {
     let sub = submatrix::<V>(m, row, col);
     sub.determinant()
+}
+
+pub fn cofactor<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize) -> V {
+    let is_odd = ((row + col) as i64) & 1 != 0;
+    let m = minor(m, row, col);
+    match is_odd {
+        true => -m,
+        _ => m,
+    }
 }
 
 #[cfg(test)]
@@ -708,5 +718,14 @@ mod tests {
         let b = submatrix(&a, 1, 0);
         assert_eq!(b.determinant(), 25.0);
         assert_eq!(minor(&a, 1, 0), 25.0);
+    }
+
+    #[test]
+    fn test_cofactor() {
+        let a = DMatrix::from_row_slice(3, 3, &[3.0, 5.0, 0.0, 2.0, -1.0, -7.0, 6.0, -1.0, 5.0]);
+        assert_eq!(minor(&a, 0, 0), -12.0);
+        assert_eq!(cofactor(&a, 0, 0), -12.0);
+        assert_eq!(minor(&a, 1, 0), 25.0);
+        assert_eq!(cofactor(&a, 1, 0), -25.0);
     }
 }
