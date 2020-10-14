@@ -3,12 +3,14 @@
 
 #[macro_use]
 extern crate nalgebra as na;
+use alga::general::{ComplexField, RingCommutative};
+use na::{DMatrix, Dynamic, Matrix, Scalar};
 
-use std::ops::Sub;
 use std::ops::Add;
-use std::ops::Neg;
-use std::ops::Mul;
 use std::ops::Div;
+use std::ops::Mul;
+use std::ops::Neg;
+use std::ops::Sub;
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Tuple {
@@ -66,23 +68,24 @@ fn magnitude(t: Tuple) -> f64 {
 
 pub fn normalize(t: Tuple) -> Tuple {
     let magt = magnitude(t);
-    Tuple{
+    Tuple {
         x: t.x / magt,
         y: t.y / magt,
         z: t.z / magt,
-        w: t.w / magt
+        w: t.w / magt,
     }
 }
 
 fn dot(a: Tuple, b: Tuple) -> f64 {
-    a.x * b.x +
-        a.y * b.y +
-        a.z * b.z +
-        a.w * b.w
+    a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
 }
 
 fn cross(a: Tuple, b: Tuple) -> Tuple {
-    Tuple::vector(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x)
+    Tuple::vector(
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x,
+    )
 }
 
 impl Add for Tuple {
@@ -92,7 +95,7 @@ impl Add for Tuple {
             x: self.x + other.x,
             y: self.y + other.y,
             z: self.z + other.z,
-            w: self.w + other.w
+            w: self.w + other.w,
         }
     }
 }
@@ -124,11 +127,11 @@ impl Mul<f64> for Tuple {
 impl Neg for Tuple {
     type Output = Self;
     fn neg(self) -> Tuple {
-        Tuple{
-                x: self.x * -1.0,
-                y: self.y * -1.0,
-                z: self.z * -1.0,
-                w: self.w * -1.0,
+        Tuple {
+            x: self.x * -1.0,
+            y: self.y * -1.0,
+            z: self.z * -1.0,
+            w: self.w * -1.0,
         }
     }
 }
@@ -177,7 +180,7 @@ impl Add for Color {
         Color {
             red: self.red + other.red,
             green: self.green + other.green,
-            blue: self.blue + other.blue
+            blue: self.blue + other.blue,
         }
     }
 }
@@ -205,17 +208,13 @@ impl Mul<Color> for Color {
 }
 
 pub fn color(red: f64, green: f64, blue: f64) -> Color {
-    Color{
-        red,
-        green,
-        blue,
-    }
+    Color { red, green, blue }
 }
 
 pub struct Canvas {
     pub pixels: Vec<Vec<Color>>,
     pub width: i64,
-    pub height: i64
+    pub height: i64,
 }
 
 pub fn canvas(width: i64, height: i64) -> Canvas {
@@ -228,7 +227,7 @@ pub fn canvas(width: i64, height: i64) -> Canvas {
         }
         pixels.push(col)
     }
-    Canvas{
+    Canvas {
         pixels,
         width,
         height,
@@ -306,10 +305,19 @@ pub fn byte_clamp(x: f64) -> i64 {
     (x * 255.0).clamp(0.0, 255.0).round() as i64
 }
 
+pub fn submatrix<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize) -> DMatrix<V> {
+    m.clone().remove_rows(row, 1).remove_columns(col, 1)
+}
+
+pub fn minor<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize) -> V {
+    let sub = submatrix::<V>(m, row, col);
+    sub.determinant()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use na::{DMatrix, Matrix, Dynamic, VecStorage};
+    use na::VecStorage;
 
     // initial tests
     #[test]
@@ -366,65 +374,65 @@ mod tests {
     fn test_add() {
         let a = Tuple::new(3.0, -2.0, 5.0, 1.0);
         let b = Tuple::new(-2.0, 3.0, 1.0, 0.0);
-        assert_eq!(a + b, Tuple::new(1.0,1.0,6.0,1.0));
+        assert_eq!(a + b, Tuple::new(1.0, 1.0, 6.0, 1.0));
     }
 
     // subtracing two points
     #[test]
     fn test_sub() {
         let p1 = Tuple::point(3.0, 2.0, 1.0);
-        let p2 = Tuple::point(5.0,6.0,7.0);
-        assert_eq!(p1 - p2, Tuple::vector(-2.0,-4.0,-6.0));
+        let p2 = Tuple::point(5.0, 6.0, 7.0);
+        assert_eq!(p1 - p2, Tuple::vector(-2.0, -4.0, -6.0));
     }
 
     // subtracting a vector from a point
     #[test]
     fn test_sub_vec() {
-        let p = Tuple::point(3.0,2.0,1.0);
-        let v = Tuple::vector(5.0,6.0,7.0);
-        assert_eq!(p - v, Tuple::point(-2.0,-4.0,-6.0))
+        let p = Tuple::point(3.0, 2.0, 1.0);
+        let v = Tuple::vector(5.0, 6.0, 7.0);
+        assert_eq!(p - v, Tuple::point(-2.0, -4.0, -6.0))
     }
 
     // subtracting two vectors
     #[test]
     fn test_sub_vecs() {
-        let v1 = Tuple::vector(3.0,2.0,1.0);
-        let v2 = Tuple::vector(5.0,6.0,7.0);
-        assert_eq!(v1-v2, Tuple::vector(-2.0,-4.0,-6.0));
+        let v1 = Tuple::vector(3.0, 2.0, 1.0);
+        let v2 = Tuple::vector(5.0, 6.0, 7.0);
+        assert_eq!(v1 - v2, Tuple::vector(-2.0, -4.0, -6.0));
     }
 
     // subtracting a vector from the zero vector
     #[test]
     fn test_sub_a_vec_from_zero() {
         let z = Tuple::ZERO.clone();
-        let v = Tuple::vector(1.0,-2.0,-3.0);
-        assert_eq!(z - v, Tuple::vector(-1.0,2.0,3.0));
+        let v = Tuple::vector(1.0, -2.0, -3.0);
+        assert_eq!(z - v, Tuple::vector(-1.0, 2.0, 3.0));
     }
 
     // negating a tuple
     #[test]
     fn test_neg() {
-        let a = Tuple::new(1.0,-2.0,3.0,-4.0);
+        let a = Tuple::new(1.0, -2.0, 3.0, -4.0);
         assert_eq!(-a, Tuple::new(-1.0, 2.0, -3.0, 4.0));
     }
 
     // multiplying a tuple by a scalar
     #[test]
     fn test_scalar_mult() {
-        let a = Tuple::new(1.0,-2.0,3.0,-4.0);
-        assert_eq!(a * 3.5, Tuple::new(3.5,-7.0,10.5,-14.0))
+        let a = Tuple::new(1.0, -2.0, 3.0, -4.0);
+        assert_eq!(a * 3.5, Tuple::new(3.5, -7.0, 10.5, -14.0))
     }
 
     #[test]
     fn test_fraction_mult() {
-        let a = Tuple::new(1.0,-2.0,3.0,-4.0);
-        assert_eq!(a * 0.5, Tuple::new(0.5,-1.0,1.5,-2.0))
+        let a = Tuple::new(1.0, -2.0, 3.0, -4.0);
+        assert_eq!(a * 0.5, Tuple::new(0.5, -1.0, 1.5, -2.0))
     }
 
     #[test]
     fn test_dividing_a_tuple_by_a_scalar() {
-        let a = Tuple::new(1.0,-2.0,3.0,-4.0);
-        assert_eq!(a / 2.0, Tuple::new(0.5,-1.0,1.5,-2.0))
+        let a = Tuple::new(1.0, -2.0, 3.0, -4.0);
+        assert_eq!(a / 2.0, Tuple::new(0.5, -1.0, 1.5, -2.0))
     }
 
     #[test]
@@ -435,57 +443,60 @@ mod tests {
 
     #[test]
     fn test_magnitude2() {
-        let v = Tuple::vector(0.0,1.0,0.0);
+        let v = Tuple::vector(0.0, 1.0, 0.0);
         assert_eq!(magnitude(v), 1.0)
     }
 
     #[test]
     fn test_magnitude3() {
-        let v = Tuple::vector(0.0,0.0,1.0);
+        let v = Tuple::vector(0.0, 0.0, 1.0);
         assert_eq!(magnitude(v), 1.0)
     }
     #[test]
     fn test_magnitude4() {
-        let v = Tuple::vector(1.0,2.0,3.0);
+        let v = Tuple::vector(1.0, 2.0, 3.0);
         assert_eq!(magnitude(v), 14.0_f64.sqrt())
     }
     #[test]
     fn test_magnitude5() {
-        let v = Tuple::vector(-1.0,-2.0,-3.0);
+        let v = Tuple::vector(-1.0, -2.0, -3.0);
         assert_eq!(magnitude(v), 14.0_f64.sqrt())
     }
     #[test]
     fn test_normalizing1() {
-        let v = Tuple::vector(4.0,0.0,0.0);
-        assert_eq!(normalize(v), Tuple::vector(1.0,0.0,0.0))
+        let v = Tuple::vector(4.0, 0.0, 0.0);
+        assert_eq!(normalize(v), Tuple::vector(1.0, 0.0, 0.0))
     }
     #[test]
     fn test_normalizing2() {
-        let v = Tuple::vector(1.0,2.0,3.0);
-        assert!(Tuple::eq(normalize(v), Tuple::vector(0.26726,0.53452,0.80178)))
+        let v = Tuple::vector(1.0, 2.0, 3.0);
+        assert!(Tuple::eq(
+            normalize(v),
+            Tuple::vector(0.26726, 0.53452, 0.80178)
+        ))
     }
     #[test]
     fn test_normalizing3() {
-        let v = Tuple::vector(1.0,2.0,3.0);
+        let v = Tuple::vector(1.0, 2.0, 3.0);
         let norm = normalize(v);
         assert_eq!(magnitude(norm), 1.0)
     }
     #[test]
     fn test_dot_product() {
-        let a = Tuple::vector(1.0,2.0,3.0);
-        let b = Tuple::vector(2.0,3.0,4.0);
-        assert_eq!(dot(a,b), 20.0)
+        let a = Tuple::vector(1.0, 2.0, 3.0);
+        let b = Tuple::vector(2.0, 3.0, 4.0);
+        assert_eq!(dot(a, b), 20.0)
     }
     #[test]
     fn test_cross_product() {
-        let a = Tuple::vector(1.0,2.0,3.0);
-        let b = Tuple::vector(2.0,3.0,4.0);
-        assert_eq!(cross(a,b), Tuple::vector(-1.0,2.0,-1.0));
-        assert_eq!(cross(b,a), Tuple::vector(1.0,-2.0,1.0));
+        let a = Tuple::vector(1.0, 2.0, 3.0);
+        let b = Tuple::vector(2.0, 3.0, 4.0);
+        assert_eq!(cross(a, b), Tuple::vector(-1.0, 2.0, -1.0));
+        assert_eq!(cross(b, a), Tuple::vector(1.0, -2.0, 1.0));
     }
     #[test]
     fn test_colors() {
-        let c = color(-0.5,0.4,1.7);
+        let c = color(-0.5, 0.4, 1.7);
         assert_eq!(c.red, -0.5);
         assert_eq!(c.green, 0.4);
         assert_eq!(c.blue, 1.7);
@@ -494,29 +505,28 @@ mod tests {
     fn test_colors_add() {
         let c1 = color(0.9, 0.6, 0.75);
         let c2 = color(0.7, 0.1, 0.25);
-        assert_eq!(c1 + c2, color(1.6,0.7,1.0))
+        assert_eq!(c1 + c2, color(1.6, 0.7, 1.0))
     }
     #[test]
     fn test_mult_scalar() {
         let c = color(0.2, 0.3, 0.4);
-        assert_eq!(c * 2.0, color(0.4,0.6,0.8))
+        assert_eq!(c * 2.0, color(0.4, 0.6, 0.8))
     }
     #[test]
     fn test_mult_colors() {
         let c1 = color(1.0, 0.2, 0.4);
         let c2 = color(0.9, 1.0, 0.1);
-        assert_eq!(c1 * c2, color(0.9,0.2,0.04))
+        assert_eq!(c1 * c2, color(0.9, 0.2, 0.04))
     }
     #[test]
     fn test_canvas() {
-        let c = canvas(10,20);
+        let c = canvas(10, 20);
         assert_eq!(c.width, 10);
         assert_eq!(c.height, 20);
         for x in 0..c.pixels.len() {
             for y in 0..c.pixels[x].len() {
                 assert_eq!(c.pixels[x as usize][y as usize], color(0.0, 0.0, 0.0));
             }
-
         }
     }
     #[test]
@@ -566,81 +576,137 @@ mod tests {
         assert_eq!(four_to_six, want)
     }
 
-     #[test]
-     fn test_splitting_long_lines_in_ppm() {
-         let mut c = canvas(10, 2);
-         let col = color(1.0, 0.8, 0.6);
-         for x in 0..c.pixels.len() {
-             for y in 0..c.pixels[x].len() {
-                 write_pixel(&mut c, x as i64, y as i64, col);
-             }
-         }
-         let want = r#"255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204
+    #[test]
+    fn test_splitting_long_lines_in_ppm() {
+        let mut c = canvas(10, 2);
+        let col = color(1.0, 0.8, 0.6);
+        for x in 0..c.pixels.len() {
+            for y in 0..c.pixels[x].len() {
+                write_pixel(&mut c, x as i64, y as i64, col);
+            }
+        }
+        let want = r#"255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204
 153 255 204 153 255 204 153 255 204 153 255 204 153
 255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204
 153 255 204 153 255 204 153 255 204 153 255 204 153
 "#;
-         let ppm = canvas_to_ppm(c);
-         let mut four_to_seven = String::new();
-         for line in ppm.lines().skip(3).take(4) {
-             four_to_seven.push_str(line);
-             four_to_seven.push('\n');
-         }
-         assert_eq!(four_to_seven, want)
-     }
+        let ppm = canvas_to_ppm(c);
+        let mut four_to_seven = String::new();
+        for line in ppm.lines().skip(3).take(4) {
+            four_to_seven.push_str(line);
+            four_to_seven.push('\n');
+        }
+        assert_eq!(four_to_seven, want)
+    }
 
     #[test]
     fn test_constructing_matrix() {
-        let m = DMatrix::from_row_slice(4,4, &[1.0, 2.0, 3.0, 4.0, 5.5, 6.5, 7.5, 8.5, 9.0, 10.0, 11.0, 12.0, 13.5, 14.5, 15.5, 16.5]);
-        assert_eq!(m[(0,0)], 1.0);
-        assert_eq!(m[(0,3)], 4.0);
-        assert_eq!(m[(1,0)], 5.5);
-        assert_eq!(m[(1,2)], 7.5);
-        assert_eq!(m[(2,2)], 11.0);
-        assert_eq!(m[(3,0)], 13.5);
-        assert_eq!(m[(3,2)], 15.5);
+        let m = DMatrix::from_row_slice(
+            4,
+            4,
+            &[
+                1.0, 2.0, 3.0, 4.0, 5.5, 6.5, 7.5, 8.5, 9.0, 10.0, 11.0, 12.0, 13.5, 14.5, 15.5,
+                16.5,
+            ],
+        );
+        assert_eq!(m[(0, 0)], 1.0);
+        assert_eq!(m[(0, 3)], 4.0);
+        assert_eq!(m[(1, 0)], 5.5);
+        assert_eq!(m[(1, 2)], 7.5);
+        assert_eq!(m[(2, 2)], 11.0);
+        assert_eq!(m[(3, 0)], 13.5);
+        assert_eq!(m[(3, 2)], 15.5);
     }
 
     #[test]
     fn test_constructing_2dmatrix() {
-        let m = DMatrix::from_row_slice(2,2, &[-3,5,1,-2]);
-        assert_eq!(m[(0,0)], -3);
-        assert_eq!(m[(0,1)], 5);
-        assert_eq!(m[(1,0)], 1);
-        assert_eq!(m[(1,1)], -2);
+        let m = DMatrix::from_row_slice(2, 2, &[-3, 5, 1, -2]);
+        assert_eq!(m[(0, 0)], -3);
+        assert_eq!(m[(0, 1)], 5);
+        assert_eq!(m[(1, 0)], 1);
+        assert_eq!(m[(1, 1)], -2);
     }
 
     #[test]
     fn test_multiplying_matrices() {
-        let a = DMatrix::from_row_slice(4,4,&[1,2,3,4,5,6,7,8,9,8,7,6,5,4,3,2]);
-        let b = DMatrix::from_row_slice(4,4,&[-2,1,2,3,3,2,1,-1,4,3,6,5,1,2,7,8]);
-        assert_eq!(a * b, DMatrix::from_row_slice(4,4,&[20,22,50,48,44,54,114,108,40,58,110,102,16,26,46,42]));
+        let a = DMatrix::from_row_slice(4, 4, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 3, 2]);
+        let b = DMatrix::from_row_slice(4, 4, &[-2, 1, 2, 3, 3, 2, 1, -1, 4, 3, 6, 5, 1, 2, 7, 8]);
+        assert_eq!(
+            a * b,
+            DMatrix::from_row_slice(
+                4,
+                4,
+                &[20, 22, 50, 48, 44, 54, 114, 108, 40, 58, 110, 102, 16, 26, 46, 42]
+            )
+        );
     }
 
     #[test]
     fn test_multiplication_by_tuple() {
-        let a = DMatrix::from_row_slice(4,4,&[1,2,3,4,2,4,4,2,8,6,4,1,0,0,0,1]);
-        let b = DMatrix::from_row_slice(4,1,&[1,2,3,1]);
-        assert_eq!(a * b, DMatrix::from_row_slice(4,1,&[18,24,33,1]));
+        let a = DMatrix::from_row_slice(4, 4, &[1, 2, 3, 4, 2, 4, 4, 2, 8, 6, 4, 1, 0, 0, 0, 1]);
+        let b = DMatrix::from_row_slice(4, 1, &[1, 2, 3, 1]);
+        assert_eq!(a * b, DMatrix::from_row_slice(4, 1, &[18, 24, 33, 1]));
     }
 
     #[test]
     fn test_multiplicative_identity() {
-        let a = DMatrix::from_row_slice(4,4,&[0, 1, 2, 4, 1, 2, 4, 8, 2, 4, 8, 16,4, 8, 16, 32]);
-        let id = DMatrix::identity(4,4);
+        let a = DMatrix::from_row_slice(4, 4, &[0, 1, 2, 4, 1, 2, 4, 8, 2, 4, 8, 16, 4, 8, 16, 32]);
+        let id = DMatrix::identity(4, 4);
         assert_eq!(a.clone() * id, a);
     }
 
     #[test]
     fn test_transpose() {
-        let a = DMatrix::from_row_slice(4,4,&[0,9,3,0,9,8,0,8,1,8,5,3,0,0,5,8]);
+        let a = DMatrix::from_row_slice(4, 4, &[0, 9, 3, 0, 9, 8, 0, 8, 1, 8, 5, 3, 0, 0, 5, 8]);
         let t = a.transpose();
-        assert_eq!(t, DMatrix::from_row_slice(4,4,&[0,9,1,0,9,8,8,0,3,0,5,5,0,8,3,8]));
+        assert_eq!(
+            t,
+            DMatrix::from_row_slice(4, 4, &[0, 9, 1, 0, 9, 8, 8, 0, 3, 0, 5, 5, 0, 8, 3, 8])
+        );
     }
 
     #[test]
     fn test_id_transpose() {
-        let id: Matrix<i64, Dynamic, Dynamic, VecStorage<i64, Dynamic, Dynamic>> = DMatrix::identity(4,4);
+        let id: Matrix<i64, Dynamic, Dynamic, VecStorage<i64, Dynamic, Dynamic>> =
+            DMatrix::identity(4, 4);
         assert_eq!(id.clone(), id.transpose());
+    }
+
+    #[test]
+    fn test_determinant() {
+        let a = DMatrix::from_row_slice(2, 2, &[1.0, 5.0, -3.0, 2.0]);
+        assert_eq!(a.determinant(), 17.0);
+    }
+
+    #[test]
+    fn test_submatrix() {
+        let a = DMatrix::from_row_slice(3, 3, &[1.0, 5.0, 0.0, -3.0, 2.0, 7.0, 0.0, 6.0, -3.0]);
+        assert_eq!(
+            submatrix(&a, 0, 2),
+            DMatrix::from_row_slice(2, 2, &[-3.0, 2.0, 0.0, 6.0])
+        );
+    }
+
+    #[test]
+    fn test_submatrix_2() {
+        let a = DMatrix::from_row_slice(
+            4,
+            4,
+            &[
+                -6.0, 1.0, 1.0, 6.0, -8.0, 5.0, 8.0, 6.0, -1.0, 0.0, 8.0, 2.0, -7.0, 1.0, -1.0, 1.0,
+            ],
+        );
+        assert_eq!(
+            submatrix(&a, 2, 1),
+            DMatrix::from_row_slice(3, 3, &[-6.0, 1.0, 6.0, -8.0, 8.0, 6.0, -7.0, -1.0, 1.0])
+        );
+    }
+
+    #[test]
+    fn test_minor() {
+        let a = DMatrix::from_row_slice(3, 3, &[3.0, 5.0, 0.0, 2.0, -1.0, -7.0, 6.0, -1.0, 5.0]);
+        let b = submatrix(&a, 1, 0);
+        assert_eq!(b.determinant(), 25.0);
+        assert_eq!(minor(&a, 1, 0), 25.0);
     }
 }
