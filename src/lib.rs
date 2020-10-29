@@ -3,7 +3,7 @@
 
 extern crate nalgebra as na;
 use alga::general::ComplexField;
-use na::{DMatrix, Scalar};
+use na::{DMatrix, Matrix3x4, Matrix4, Scalar};
 
 #[macro_use]
 extern crate approx;
@@ -323,6 +323,11 @@ pub fn cofactor<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize
         true => -m,
         _ => m,
     }
+}
+
+// XXX: has randomly started only caring about Matrix3 and Matrix4 not DMatrix
+pub fn translation<V: Scalar + ComplexField>(m: &Matrix3x4<V>, x: V, _y: V, _z: V) -> Matrix4<V> {
+    Matrix4::from_iterator(m.iter())
 }
 
 #[cfg(test)]
@@ -834,5 +839,27 @@ mod tests {
         println!("what is the inverse of the identity matrix?");
         println!("id     : {:?}", id.clone());
         println!("inverse: {:?}", id.clone().try_inverse().unwrap());
+    }
+
+    // #[test]
+    fn test_multiplying_by_a_translation_matrix() {
+        let transform = translation(5.0, -3.0, 2.0);
+        let p = Tuple::point(-3.0, 4.0, 5.0);
+        assert_eq!(transform * p, Tuple::point(2.0, 1.0, 7.0));
+    }
+
+    // #[test]
+    fn test_multiplying_by_the_inverse_of_a_translation_mastrix() {
+        let transform = translation(5.0, -3.0, 2.0);
+        let inv = transform.try_inverse().unpwrap();
+        let p = Tuple::point(-3.0, 4.0, 5.0);
+        assert_eq!(inv * p, Tuple::point(-8.0, 7.0, 3.0));
+    }
+
+    // #[test]
+    fn test_translation_does_not_affect_vectors() {
+        let transform = translation(5.0, -3.0, 2.0);
+        let v = Tuple::vector(-3.0, 4.0, 5.0);
+        assert_eq!(transform * v, v);
     }
 }
