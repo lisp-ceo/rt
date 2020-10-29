@@ -307,7 +307,6 @@ pub fn byte_clamp(x: f64) -> i64 {
     (x * 255.0).clamp(0.0, 255.0).round() as i64
 }
 
-// TODO: replace <V> with named trait that includes Scalar + ComplexField
 pub fn submatrix<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize) -> DMatrix<V> {
     m.clone().remove_rows(row, 1).remove_columns(col, 1)
 }
@@ -771,6 +770,7 @@ mod tests {
         assert_eq!(a.is_invertible(), true);
     }
 
+    #[test]
     fn test_not_invertible() {
         let a = DMatrix::from_row_slice(
             4,
@@ -784,6 +784,7 @@ mod tests {
         assert_eq!(a.is_invertible(), false);
     }
 
+    #[test]
     fn test_not_inverse() {
         let a = DMatrix::from_row_slice(
             4,
@@ -794,10 +795,44 @@ mod tests {
             ],
         );
         let b = a.clone().try_inverse().unwrap();
-        assert_eq!(a.determinant(), 532.0);
+        assert_relative_eq!(a.determinant(), 532.0);
         assert_eq!(cofactor(&a, 2, 3), -160.0);
-        assert_eq!(b[(3, 2)], 105.0);
+        assert_eq!(b[(3, 2)], -160.0 / 532.0);
         assert_eq!(cofactor(&a, 3, 2), 105.0);
         assert_eq!(b[(2, 3)], 105.0 / 532.0);
+        assert_relative_eq!(
+            b,
+            DMatrix::from_row_slice(
+                4,
+                4,
+                &[
+                    0.21804511278195488,
+                    0.45112781954887216,
+                    0.24060150375939848,
+                    -0.045112781954887216,
+                    -0.8082706766917293,
+                    -1.456766917293233,
+                    -0.44360902255639095,
+                    0.5206766917293233,
+                    -0.07894736842105263,
+                    -0.22368421052631576,
+                    -0.05263157894736842,
+                    0.19736842105263158,
+                    -0.5225563909774436,
+                    -0.8139097744360901,
+                    -0.3007518796992481,
+                    0.306390977443609
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn test_inverting_id() {
+        let id: Matrix<f64, Dynamic, Dynamic, VecStorage<f64, Dynamic, Dynamic>> =
+            DMatrix::identity(4, 4);
+        println!("what is the inverse of the identity matrix?");
+        println!("id     : {:?}", id.clone());
+        println!("inverse: {:?}", id.clone().try_inverse().unwrap());
     }
 }
