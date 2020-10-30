@@ -1,12 +1,15 @@
+#![feature(stmt_expr_attributes)]
 #![feature(clamp)]
 #![allow(dead_code)]
 
 extern crate nalgebra as na;
 use alga::general::ComplexField;
-use na::{DMatrix, Matrix3x4, Matrix4, Scalar};
+use na::{DMatrix, Matrix4, Point3, Scalar, Vector3};
 
 #[macro_use]
 extern crate approx;
+
+const PRINT_NOTES: bool = false;
 
 use std::ops::Add;
 use std::ops::Div;
@@ -325,9 +328,12 @@ pub fn cofactor<V: Scalar + ComplexField>(m: &DMatrix<V>, row: usize, col: usize
     }
 }
 
-// XXX: has randomly started only caring about Matrix3 and Matrix4 not DMatrix
-pub fn translation<V: Scalar + ComplexField>(m: &Matrix3x4<V>, x: V, _y: V, _z: V) -> Matrix4<V> {
-    Matrix4::from_iterator(m.iter())
+pub fn translation(x: f64, y: f64, z: f64) -> Matrix4<f64> {
+    let mut m = Matrix4::new_scaling(1.0);
+    m[(0, 3)] = x;
+    m[(1, 3)] = y;
+    m[(2, 3)] = z;
+    m
 }
 
 #[cfg(test)]
@@ -810,23 +816,12 @@ mod tests {
             DMatrix::from_row_slice(
                 4,
                 4,
+                #[cfg_attr(rustfmt, rustfmt_skip)]
                 &[
-                    0.21804511278195488,
-                    0.45112781954887216,
-                    0.24060150375939848,
-                    -0.045112781954887216,
-                    -0.8082706766917293,
-                    -1.456766917293233,
-                    -0.44360902255639095,
-                    0.5206766917293233,
-                    -0.07894736842105263,
-                    -0.22368421052631576,
-                    -0.05263157894736842,
-                    0.19736842105263158,
-                    -0.5225563909774436,
-                    -0.8139097744360901,
-                    -0.3007518796992481,
-                    0.306390977443609
+                    0.21804511278195488,                    0.45112781954887216,                   0.24060150375939848,                    -0.045112781954887216,
+                    -0.8082706766917293,                    -1.456766917293233,                    -0.44360902255639095,                    0.5206766917293233,
+                    -0.07894736842105263,                   -0.22368421052631576,                  -0.05263157894736842,                    0.19736842105263158,
+                    -0.5225563909774436,                    -0.8139097744360901,                   -0.3007518796992481,                     0.306390977443609
                 ]
             )
         );
@@ -836,30 +831,50 @@ mod tests {
     fn test_inverting_id() {
         let id: Matrix<f64, Dynamic, Dynamic, VecStorage<f64, Dynamic, Dynamic>> =
             DMatrix::identity(4, 4);
-        println!("what is the inverse of the identity matrix?");
-        println!("id     : {:?}", id.clone());
-        println!("inverse: {:?}", id.clone().try_inverse().unwrap());
+        if PRINT_NOTES {
+            println!("what is the inverse of the identity matrix?");
+            println!("id     : {:?}", id.clone());
+            println!("inverse: {:?}", id.clone().try_inverse().unwrap());
+        }
     }
 
-    // #[test]
-    fn test_multiplying_by_a_translation_matrix() {
-        let transform = translation(5.0, -3.0, 2.0);
-        let p = Tuple::point(-3.0, 4.0, 5.0);
-        assert_eq!(transform * p, Tuple::point(2.0, 1.0, 7.0));
+    #[test]
+    fn test_translation() {
+        let m = translation(4.0, 3.0, 2.0);
+        assert_eq!(
+            #[cfg_attr(rustfmt, rustfmt_skip)]
+            Matrix4::from_row_slice(&[
+                1.0, 0.0, 0.0, 4.0,
+                0.0, 1.0, 0.0, 3.0,
+                0.0, 0.0, 1.0, 2.0,
+                0.0, 0.0, 0.0, 1.0,
+            ]),
+            m
+        );
     }
 
-    // #[test]
-    fn test_multiplying_by_the_inverse_of_a_translation_mastrix() {
-        let transform = translation(5.0, -3.0, 2.0);
-        let inv = transform.try_inverse().unpwrap();
-        let p = Tuple::point(-3.0, 4.0, 5.0);
-        assert_eq!(inv * p, Tuple::point(-8.0, 7.0, 3.0));
+    #[test]
+    fn test_transforming_a_point_by_a_translation_matrix() {
+        let t = translation(5.0, -3.0, 2.0);
+        let p = Point3::new(-3.0, 4.0, 5.0);
+        // The point goes forwards!
+        assert_eq!(t.transform_point(&p), Point3::new(2.0, 1.0, 7.0));
     }
 
-    // #[test]
+    #[test]
+    fn test_transforming_a_point_by_the_inverse_of_a_translation_matrix() {
+        let mut t = translation(5.0, -3.0, 2.0);
+        t.try_inverse_mut();
+        let p = Point3::new(-3.0, 4.0, 5.0);
+        // The point goes backwards?!?!?
+        assert_eq!(t.transform_point(&p), Point3::new(-8.0, 7.0, 3.0));
+    }
+
+    #[ignore]
     fn test_translation_does_not_affect_vectors() {
-        let transform = translation(5.0, -3.0, 2.0);
-        let v = Tuple::vector(-3.0, 4.0, 5.0);
-        assert_eq!(transform * v, v);
+        // Not needed as translation a matrix by a point is implemented using
+        // `transform_point` instead of the usual approach of overloading multiplication
+        // for any vec4 (point3 or vector3 + 1 to signal the type difference).
+        // Vec3 * Mat4x4 is not a valid matrix operation as the dimensions do not match.
     }
 }
