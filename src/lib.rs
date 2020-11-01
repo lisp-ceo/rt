@@ -901,4 +901,12 @@ mod tests {
         // scaling scales vectors as well
         assert_eq!(t.transform_vector(&v), Vector3::new(-8.0, 18.0, 32.0));
     }
+
+    #[test]
+    fn test_reflection_is_scaling_by_a_negative_value() {
+        let t = scaling(-1.0, 1.0, 1.0);
+        let p = Point3::new(2.0, 3.0, 4.0);
+        // reflects a point over the x axis
+        assert_eq!(t.transform_point(&p), Point3::new(-2.0, 3.0, 4.0));
+    }
 }
