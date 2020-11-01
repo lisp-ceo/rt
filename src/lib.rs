@@ -4,7 +4,7 @@
 
 extern crate nalgebra as na;
 use alga::general::ComplexField;
-use na::{DMatrix, Matrix4, Point3, Scalar, Vector3};
+use na::{DMatrix, Matrix4, Scalar};
 
 #[macro_use]
 extern crate approx;
@@ -336,10 +336,18 @@ pub fn translation(x: f64, y: f64, z: f64) -> Matrix4<f64> {
     m
 }
 
+pub fn scaling(x: f64, y: f64, z: f64) -> Matrix4<f64> {
+    let mut m = Matrix4::new_scaling(1.0);
+    m[(0, 0)] = x;
+    m[(1, 1)] = y;
+    m[(2, 2)] = z;
+    m
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use na::{Dynamic, Matrix, VecStorage};
+    use na::{Dynamic, Matrix, Point3, VecStorage, Vector3};
 
     // initial tests
     #[test]
@@ -872,9 +880,25 @@ mod tests {
 
     #[ignore]
     fn test_translation_does_not_affect_vectors() {
-        // Not needed as translation a matrix by a point is implemented using
-        // `transform_point` instead of the usual approach of overloading multiplication
-        // for any vec4 (point3 or vector3 + 1 to signal the type difference).
-        // Vec3 * Mat4x4 is not a valid matrix operation as the dimensions do not match.
+        let mut t = translation(5.0, -3.0, 2.0);
+        let v = Vector3::new(-3.0, 4.0, 5.0);
+        // translation does not affect vectors
+        assert_eq!(t.transform_vector(&v), v);
+    }
+
+    #[test]
+    fn test_scaling_a_matrix_applied_to_a_point() {
+        let t = scaling(2.0, 3.0, 4.0);
+        let p = Point3::new(-4.0, 6.0, 8.0);
+        // scaling scales out all points
+        assert_eq!(t.transform_point(&p), Point3::new(-8.0, 18.0, 32.0));
+    }
+
+    #[test]
+    fn test_scaling_matrix_applied_to_a_vector() {
+        let t = scaling(2.0, 3.0, 4.0);
+        let v = Vector3::new(-4.0, 6.0, 8.0);
+        // scaling scales vectors as well
+        assert_eq!(t.transform_vector(&v), Vector3::new(-8.0, 18.0, 32.0));
     }
 }
