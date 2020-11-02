@@ -2,12 +2,12 @@
 #![feature(clamp)]
 #![allow(dead_code)]
 
+#[macro_use]
+extern crate approx;
+
 extern crate nalgebra as na;
 use alga::general::ComplexField;
 use na::{DMatrix, Matrix4, Scalar};
-
-#[macro_use]
-extern crate approx;
 
 const PRINT_NOTES: bool = false;
 
@@ -341,6 +341,15 @@ pub fn scaling(x: f64, y: f64, z: f64) -> Matrix4<f64> {
     m[(0, 0)] = x;
     m[(1, 1)] = y;
     m[(2, 2)] = z;
+    m
+}
+
+pub fn rotation_x(angle: f64) -> Matrix4<f64> {
+    let mut m = Matrix4::new_scaling(1.0);
+    m[(1, 1)] = angle.cos();
+    m[(1, 2)] = -1.0 * angle.sin();
+    m[(2, 2)] = angle.cos();
+    m[(2, 1)] = angle.sin();
     m
 }
 
@@ -878,9 +887,9 @@ mod tests {
         assert_eq!(t.transform_point(&p), Point3::new(-8.0, 7.0, 3.0));
     }
 
-    #[ignore]
+    #[test]
     fn test_translation_does_not_affect_vectors() {
-        let mut t = translation(5.0, -3.0, 2.0);
+        let t = translation(5.0, -3.0, 2.0);
         let v = Vector3::new(-3.0, 4.0, 5.0);
         // translation does not affect vectors
         assert_eq!(t.transform_vector(&v), v);
@@ -908,5 +917,17 @@ mod tests {
         let p = Point3::new(2.0, 3.0, 4.0);
         // reflects a point over the x axis
         assert_eq!(t.transform_point(&p), Point3::new(-2.0, 3.0, 4.0));
+    }
+
+    #[test]
+    fn test_rotating_a_point_around_the_x_axis() {
+        let p = Point3::new(0.0, 1.0, 0.0);
+        let half_quarter = rotation_x(std::f64::consts::FRAC_PI_4);
+        let full_quarter = rotation_x(std::f64::consts::FRAC_PI_2);
+        assert_relative_eq!(
+            half_quarter.transform_point(&p),
+            Point3::new(0.0, (2.0).sqrt() / 2.0, (2.0).sqrt() / 2.0)
+        );
+        assert_relative_eq!(full_quarter.transform_point(&p), Point3::new(0.0, 0.0, 1.0));
     }
 }
