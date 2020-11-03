@@ -2,9 +2,6 @@
 #![feature(clamp)]
 #![allow(dead_code)]
 
-#[macro_use]
-extern crate approx;
-
 extern crate nalgebra as na;
 use alga::general::ComplexField;
 use na::{DMatrix, Matrix4, Scalar};
@@ -353,7 +350,18 @@ pub fn rotation_x(angle: f64) -> Matrix4<f64> {
     m
 }
 
+pub fn rotation_y(angle: f64) -> Matrix4<f64> {
+    let mut m = Matrix4::new_scaling(1.0);
+    m[(0, 0)] = angle.cos();
+    m[(2, 0)] = angle.sin();
+    m[(0, 2)] = angle.sin();
+    m[(2, 2)] = angle.cos();
+    m
+}
+
 #[cfg(test)]
+#[macro_use]
+extern crate approx;
 mod tests {
     use super::*;
     use na::{Dynamic, Matrix, Point3, VecStorage, Vector3};
@@ -929,5 +937,17 @@ mod tests {
             Point3::new(0.0, (2.0).sqrt() / 2.0, (2.0).sqrt() / 2.0)
         );
         assert_relative_eq!(full_quarter.transform_point(&p), Point3::new(0.0, 0.0, 1.0));
+    }
+
+    #[test]
+    fn test_rotating_a_point_around_the_y_axis() {
+        let p = Point3::new(0.0, 0.0, 1.0);
+        let half_quarter = rotation_y(std::f64::consts::FRAC_PI_4);
+        let full_quarter = rotation_y(std::f64::consts::FRAC_PI_2);
+        assert_relative_eq!(
+            half_quarter.transform_point(&p),
+            Point3::new((2.0).sqrt() / 2.0, 0.0, (2.0).sqrt() / 2.0)
+        );
+        assert_relative_eq!(full_quarter.transform_point(&p), Point3::new(1.0, 0.0, 0.0));
     }
 }
