@@ -359,6 +359,33 @@ pub fn rotation_y(angle: f64) -> Matrix4<f64> {
     m
 }
 
+pub fn rotation_z(angle: f64) -> Matrix4<f64> {
+    let mut m = Matrix4::new_scaling(1.0);
+    m[(0, 0)] = angle.cos();
+    m[(0, 1)] = -1.0 * angle.sin();
+    m[(1, 0)] = angle.sin();
+    m[(1, 1)] = angle.cos();
+    m[(2, 2)] = 1.0;
+    m[(3, 3)] = 1.0;
+    m
+}
+
+pub fn shearing(xy: f64, xz: f64, yx: f64, yz: f64, zx: f64, zy: f64) -> Matrix4<f64> {
+    let mut m = Matrix4::new_scaling(0.0);
+    m[(0,0)] = 1.0;
+    m[(0,1)] = xy;
+    m[(0,2)] = xz;
+    m[(1,0)] = yx;
+    m[(1,1)] = 1.0;
+    m[(1,2)] = yz;
+    m[(2,0)] = zx;
+    m[(2,1)] = zy;
+    m[(2,2)] = 1.0;
+    m[(3,3)] = 1.0;
+    m
+}
+
+
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
@@ -950,4 +977,96 @@ mod tests {
         );
         assert_relative_eq!(full_quarter.transform_point(&p), Point3::new(1.0, 0.0, 0.0));
     }
-}
+
+    #[test]
+    fn test_rotating_a_point_around_the_z_axis() {
+        let p = Point3::new(0.0, 1.0, 0.0);
+        let half_quarter = rotation_z(std::f64::consts::FRAC_PI_4);
+        let full_quarter = rotation_z(std::f64::consts::FRAC_PI_2);
+        assert_relative_eq!(
+            half_quarter.transform_point(&p),
+            Point3::new(-1.0 * (2.0).sqrt() / 2.0, (2.0).sqrt() / 2.0, 0.0)
+        );
+        assert_relative_eq!(
+            full_quarter.transform_point(&p),
+            Point3::new(-1.0, 0.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn test_shearing_x_in_proportion_to_y() {
+        let transform = shearing(
+            1.0, 0.0, 0.0,
+            0.0, 0.0, 0.0
+        );
+        let p = Point3::new(2.0, 3.0, 4.0);
+        assert_relative_eq!(
+            transform.transform_point(&p),
+            Point3::new(5.0, 3.0, 4.0)
+        )
+    }
+
+    #[test]
+    fn test_shearing_x_in_proportion_to_z() {
+        let transform = shearing(
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0
+        );
+        let p = Point3::new(2.0, 3.0, 4.0);
+        assert_relative_eq!(
+            transform.transform_point(&p),
+            Point3::new(6.0, 3.0, 4.0)
+        )
+    }
+
+    #[test]
+    fn test_shearing_y_in_proportion_to_x() {
+        let transform = shearing(
+            0.0, 0.0, 1.0,
+            0.0, 0.0, 0.0
+        );
+        let p = Point3::new(2.0, 3.0, 4.0);
+        assert_relative_eq!(
+            transform.transform_point(&p),
+            Point3::new(2.0, 5.0, 4.0)
+        )
+    }
+
+    #[test]
+    fn test_shearing_y_in_proportion_to_z() {
+        let transform = shearing(
+            0.0, 0.0, 0.0,
+            1.0, 0.0, 0.0
+        );
+        let p = Point3::new(2.0, 3.0, 4.0);
+        assert_relative_eq!(
+            transform.transform_point(&p),
+            Point3::new(2.0, 7.0, 4.0)
+        )
+    }
+
+    #[test]
+    fn test_shearing_z_in_proportion_to_x() {
+        let transform = shearing(
+            0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0
+        );
+        let p = Point3::new(2.0, 3.0, 4.0);
+        assert_relative_eq!(
+            transform.transform_point(&p),
+            Point3::new(2.0, 3.0, 6.0)
+        )
+    }
+
+    #[test]
+    fn test_shearing_z_in_proportion_to_y() {
+        let transform = shearing(
+            0.0, 0.0, 0.0,
+            0.0, 0.0, 1.0
+        );
+        let p = Point3::new(2.0, 3.0, 4.0);
+        assert_relative_eq!(
+            transform.transform_point(&p),
+            Point3::new(2.0, 3.0, 7.0)
+        )
+    }}
